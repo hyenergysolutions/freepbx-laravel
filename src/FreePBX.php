@@ -5,26 +5,30 @@ declare(strict_types=1);
 namespace HyEnergySolutions\FreePBX;
 
 use HyEnergySolutions\FreePBX\Exceptions\FreePBXException;
+use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
 class FreePBX
 {
-    private string $tokenUri;
-
-    private string $gqlUri;
-
-    private string $restUri;
-
     public function __construct(
         private string $url,
         private string $clientId,
         private string $clientSecret,
-    ) {
-        $this->tokenUri = $this->url.'/admin/api/api/token';
-        $this->gqlUri = $this->url.'/admin/api/api/gql';
-        $this->restUri = $this->url.'/admin/api/api/rest';
+    ) {}
+
+    /**
+     * Create HTTP client with common configuration
+     */
+    protected function http(): PendingRequest
+    {
+        return Http::baseUrl($this->url)
+            ->timeout(30)
+            ->retry(3, 100, throw: false)
+            ->withToken($this->getToken())
+            ->throw();
     }
 
     /**
@@ -33,14 +37,22 @@ class FreePBX
     protected function getToken(): string
     {
         return Cache::remember('freepbx_token', 3500, function () {
-            $response = Http::asForm()
-                ->withBasicAuth($this->clientId, $this->clientSecret)
-                ->post($this->tokenUri, [
-                    'grant_type' => 'client_credentials',
-                    'scope' => 'gql rest',
-                ]);
+            try {
+                $response = Http::baseUrl($this->url)
+                    ->timeout(30)
+                    ->retry(3, 100)
+                    ->asForm()
+                    ->withBasicAuth($this->clientId, $this->clientSecret)
+                    ->throw()
+                    ->post('/admin/api/api/token', [
+                        'grant_type' => 'client_credentials',
+                        'scope' => 'gql rest',
+                    ]);
+            } catch (RequestException $e) {
+                throw FreePBXException::tokenFailed($e->response->body());
+            }
 
-            if ($response->failed() || ! isset($response->json()['access_token'])) {
+            if (! isset($response->json()['access_token'])) {
                 throw FreePBXException::tokenFailed($response->body());
             }
 
@@ -53,14 +65,12 @@ class FreePBX
      */
     protected function graphql(string $query): ?array
     {
-        $response = Http::withToken($this->getToken())
-            ->post($this->gqlUri, [
-                'query' => $query,
-            ]);
-
-        if ($response->failed()) {
+        try {
+            $response = $this->http()
+                ->post('/admin/api/api/gql', ['query' => $query]);
+        } catch (RequestException $e) {
             Cache::forget('freepbx_token');
-            throw FreePBXException::graphqlError($response->body());
+            throw FreePBXException::graphqlError($e->response->body());
         }
 
         $json = $response->json();
@@ -77,15 +87,14 @@ class FreePBX
      */
     protected function rest(string $method, string $endpoint): mixed
     {
-        $response = Http::withToken($this->getToken())
-            ->{$method}($this->restUri.$endpoint);
-
-        if ($response->failed()) {
+        try {
+            return $this->http()
+                ->{$method}('/admin/api/api/rest'.$endpoint)
+                ->json();
+        } catch (RequestException $e) {
             Cache::forget('freepbx_token');
-            throw FreePBXException::restError($response->body());
+            throw FreePBXException::restError($e->response->body());
         }
-
-        return $response->json();
     }
 
     /**
