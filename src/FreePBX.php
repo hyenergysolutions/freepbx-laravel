@@ -205,7 +205,7 @@ class FreePBX
      */
     public function getCallFlowState(string $id): ?string
     {
-        $result = $this->rest('get', '/daynight/'.$id.'/');
+        $result = $this->rest('get', '/daynight/'.$id);
 
         return $result['state'] ?? null;
     }
