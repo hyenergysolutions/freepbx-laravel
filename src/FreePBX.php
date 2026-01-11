@@ -199,4 +199,14 @@ class FreePBX
     {
         return collect($this->rest('get', '/daynight/') ?? []);
     }
+
+    /**
+     * Get the current state of a call flow
+     */
+    public function getCallFlowState(string $id): ?string
+    {
+        $result = $this->rest('get', '/daynight/'.$id.'/');
+
+        return $result['state'] ?? null;
+    }
 }
