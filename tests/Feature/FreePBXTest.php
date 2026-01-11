@@ -201,3 +201,47 @@ test('returns empty collection when no data', function () {
 
     expect($extensions)->toBeEmpty();
 });
+
+test('getCallFlows returns collection of call flows', function () {
+    Http::fake([
+        '*/token' => Http::response(['access_token' => 'fake-token']),
+        '*/rest/daynight/*' => Http::response([
+            ['ext' => '1', 'dest' => 'Sales Hours'],
+            ['ext' => '2', 'dest' => 'Support Hours'],
+        ]),
+    ]);
+
+    $callFlows = FreePBX::getCallFlows();
+
+    expect($callFlows)->toBeInstanceOf(\Illuminate\Support\Collection::class)
+        ->and($callFlows)->toHaveCount(2)
+        ->and($callFlows->first()['ext'])->toBe('1')
+        ->and($callFlows->first()['dest'])->toBe('Sales Hours');
+});
+
+test('throws exception on REST API failure', function () {
+    Http::fake([
+        '*/token' => Http::response(['access_token' => 'fake-token']),
+        '*/rest/daynight/*' => Http::response('Internal Server Error', 500),
+    ]);
+
+    FreePBX::getCallFlows();
+})->throws(FreePBXException::class, 'FreePBX REST API error');
+
+test('clears token cache on REST API failure', function () {
+    Http::fake([
+        '*/token' => Http::response(['access_token' => 'fake-token']),
+        '*/rest/daynight/*' => Http::response('Internal Server Error', 500),
+    ]);
+
+    Cache::put('freepbx_token', 'cached-token', 3500);
+    expect(Cache::has('freepbx_token'))->toBeTrue();
+
+    try {
+        FreePBX::getCallFlows();
+    } catch (FreePBXException) {
+        // Expected
+    }
+
+    expect(Cache::has('freepbx_token'))->toBeFalse();
+});

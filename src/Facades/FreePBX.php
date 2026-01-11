@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Facade;
  * @method static Collection getExtensions()
  * @method static Collection getRingGroups()
  * @method static Collection getCdrs(int $first = 100)
+ * @method static Collection getCallFlows()
  *
  * @see \HyEnergySolutions\FreePBX\FreePBX
  */

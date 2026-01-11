@@ -1,6 +1,6 @@
 # FreePBX Laravel
 
-A Laravel package for integrating with FreePBX's GraphQL API.
+A Laravel package for integrating with FreePBX's GraphQL and REST APIs.
 
 ## Requirements
 
@@ -46,6 +46,9 @@ $ringGroups = FreePBX::getRingGroups();
 
 // Get call detail records (CDRs)
 $cdrs = FreePBX::getCdrs(100);
+
+// Get all call flows (day/night mode)
+$callFlows = FreePBX::getCallFlows();
 ```
 
 ### Using Dependency Injection
@@ -79,6 +82,10 @@ Returns all ring groups with their configuration including group number, descrip
 ### `getCdrs(int $first = 100): Collection`
 
 Returns call detail records (CDRs) with call date, source, destination, duration, and disposition.
+
+### `getCallFlows(): Collection`
+
+Returns all day/night call flows with their current state.
 
 ## Error Handling
 

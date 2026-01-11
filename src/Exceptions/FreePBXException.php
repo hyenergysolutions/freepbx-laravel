@@ -22,4 +22,9 @@ class FreePBXException extends Exception
     {
         return new self('FreePBX GraphQL error: '.json_encode($errors));
     }
+
+    public static function restError(string $body): self
+    {
+        return new self("FreePBX REST API error: {$body}");
+    }
 }

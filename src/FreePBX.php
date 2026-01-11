@@ -15,6 +15,8 @@ class FreePBX
 
     private string $gqlUri;
 
+    private string $restUri;
+
     public function __construct(
         private string $url,
         private string $clientId,
@@ -22,6 +24,7 @@ class FreePBX
     ) {
         $this->tokenUri = $this->url.'/admin/api/api/token';
         $this->gqlUri = $this->url.'/admin/api/api/gql';
+        $this->restUri = $this->url.'/admin/api/api/rest';
     }
 
     /**
@@ -67,6 +70,22 @@ class FreePBX
         }
 
         return $json['data'] ?? null;
+    }
+
+    /**
+     * Execute REST API request
+     */
+    protected function rest(string $method, string $endpoint): mixed
+    {
+        $response = Http::withToken($this->getToken())
+            ->{$method}($this->restUri.$endpoint);
+
+        if ($response->failed()) {
+            Cache::forget('freepbx_token');
+            throw FreePBXException::restError($response->body());
+        }
+
+        return $response->json();
     }
 
     /**
@@ -162,5 +181,13 @@ class FreePBX
         $result = $this->graphql($query);
 
         return collect($result['fetchAllCdrs']['cdrs'] ?? []);
+    }
+
+    /**
+     * Get all call flows (day/night mode)
+     */
+    public function getCallFlows(): Collection
+    {
+        return collect($this->rest('get', '/daynight/') ?? []);
     }
 }
