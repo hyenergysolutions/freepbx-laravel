@@ -109,51 +109,58 @@ class FreePBX
     }
 
     /**
-     * Get all call flows (day/night)
+     * Get all ring groups
      */
-    public function getCallFlows(): Collection
+    public function getRingGroups(): Collection
     {
         $query = 'query {
-            fetchAllDaynight {
+            fetchAllRingGroups {
                 status
                 message
                 totalCount
-                daynight {
+                ringgroups {
                     id
-                    displayname
-                    state
-                    day
-                    night
+                    groupNumber
+                    description
+                    groupList
+                    groupTime
+                    strategy
+                    needConf
+                    callRecording
                 }
             }
         }';
 
         $result = $this->graphql($query);
 
-        return collect($result['fetchAllDaynight']['daynight'] ?? []);
+        return collect($result['fetchAllRingGroups']['ringgroups'] ?? []);
     }
 
     /**
-     * Get all queues
+     * Get all CDR (Call Detail Records)
      */
-    public function getQueues(): Collection
+    public function getCdrs(int $first = 100): Collection
     {
         $query = 'query {
-            fetchAllQueues {
+            fetchAllCdrs(first: '.$first.') {
                 status
                 message
                 totalCount
-                queue {
+                cdrs {
                     id
-                    name
-                    extension
-                    strategy
+                    calldate
+                    src
+                    dst
+                    duration
+                    billsec
+                    disposition
+                    uniqueid
                 }
             }
         }';
 
         $result = $this->graphql($query);
 
-        return collect($result['fetchAllQueues']['queue'] ?? []);
+        return collect($result['fetchAllCdrs']['cdrs'] ?? []);
     }
 }

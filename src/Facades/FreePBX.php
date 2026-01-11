@@ -9,8 +9,8 @@ use Illuminate\Support\Facades\Facade;
 
 /**
  * @method static Collection getExtensions()
- * @method static Collection getCallFlows()
- * @method static Collection getQueues()
+ * @method static Collection getRingGroups()
+ * @method static Collection getCdrs(int $first = 100)
  *
  * @see \HyEnergySolutions\FreePBX\FreePBX
  */

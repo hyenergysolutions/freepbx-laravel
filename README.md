@@ -41,11 +41,11 @@ use HyEnergySolutions\FreePBX\Facades\FreePBX;
 // Get all extensions
 $extensions = FreePBX::getExtensions();
 
-// Get all call flows (day/night mode)
-$callFlows = FreePBX::getCallFlows();
+// Get all ring groups
+$ringGroups = FreePBX::getRingGroups();
 
-// Get all queues
-$queues = FreePBX::getQueues();
+// Get call detail records (CDRs)
+$cdrs = FreePBX::getCdrs(100);
 ```
 
 ### Using Dependency Injection
@@ -72,13 +72,13 @@ class PBXController extends Controller
 
 Returns all extensions with user details including name, voicemail settings, caller ID, and call forwarding configuration.
 
-### `getCallFlows(): Collection`
+### `getRingGroups(): Collection`
 
-Returns all day/night call flows with their current state.
+Returns all ring groups with their configuration including group number, description, strategy, and member list.
 
-### `getQueues(): Collection`
+### `getCdrs(int $first = 100): Collection`
 
-Returns all call queues with their configuration.
+Returns call detail records (CDRs) with call date, source, destination, duration, and disposition.
 
 ## Error Handling
 
